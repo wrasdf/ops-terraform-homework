@@ -20,18 +20,19 @@ variable "public_subnets" {
   default     = []
 }
 
+variable "private_subnets" {
+  description = "A list of private subnets inside the VPC"
+  type        = "list"
+  default     = []
+}
+
+variable "database_subnets" {
+  type        = "list"
+  description = "A list of database subnets"
+  default     = []
+}
+
 variable "tags" {
   description = "A map of tags to add to all resources"
   default     = {}
 }
-# variable "private_subnets" {
-#   description = "A list of private subnets inside the VPC"
-#   type        = "list"
-#   default     = []
-# }
-#
-# variable "database_subnets" {
-#   type        = "list"
-#   description = "A list of database subnets"
-#   default     = []
-# }

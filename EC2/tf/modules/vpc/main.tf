@@ -2,10 +2,6 @@ terraform {
   required_version = ">= 0.11.10" # introduction of Local Values configuration language feature
 }
 
-locals {
-  vpc_id = "${element(concat(aws_vpc.main.*.id, list("")), 0)}"
-}
-
 ######
 # VPC
 ######
@@ -28,7 +24,7 @@ resource "aws_vpc_dhcp_options" "vpc_dhcp" {
 }
 
 resource "aws_vpc_dhcp_options_association" "vpc_dhcp_association" {
-  vpc_id          = "${local.vpc_id}"
+  vpc_id          = "${aws_vpc.main.id}"
   dhcp_options_id = "${aws_vpc_dhcp_options.vpc_dhcp.id}"
 }
 
@@ -36,7 +32,7 @@ resource "aws_vpc_dhcp_options_association" "vpc_dhcp_association" {
 # Internet Gateway
 ###################
 resource "aws_internet_gateway" "gw" {
-  vpc_id = "${local.vpc_id}"
+  vpc_id = "${aws_vpc.main.id}"
 
   tags = "${merge("${var.tags}", map("Name", "${var.name}-internet-gateway"))}"
 }
@@ -47,24 +43,24 @@ resource "aws_internet_gateway" "gw" {
 
 resource "aws_subnet" "public_subnets" {
   count = "${length(var.public_subnets)}"
-  vpc_id = "${local.vpc_id}"
+  vpc_id = "${aws_vpc.main.id}"
   availability_zone = "${element(var.azs, count.index)}"
   cidr_block = "${element(var.public_subnets, count.index)}"
   map_public_ip_on_launch = true
 
-  tags = "${merge("${var.tags}", map("Name", "${var.name}-${element(var.azs, count.index)}"))}"
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-public-subnet-${element(var.azs, count.index)}"))}"
 }
 
 resource "aws_route_table" "public_route_tables" {
   depends_on = ["aws_internet_gateway.gw"]
 
   count = "${length(var.public_subnets)}"
-  vpc_id = "${local.vpc_id}"
+  vpc_id = "${aws_vpc.main.id}"
 
-  tags = "${merge("${var.tags}", map("Name", "${var.name}-routetable-${element(var.azs, count.index)}"))}"
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-public-routetable-${element(var.azs, count.index)}"))}"
 }
 
-resource "aws_route" "public_route" {
+resource "aws_route" "public_routes" {
   count = "${length(var.public_subnets)}"
   route_table_id         = "${element(aws_route_table.public_route_tables.*.id, count.index)}"
   destination_cidr_block = "0.0.0.0/0"
@@ -79,4 +75,95 @@ resource "aws_route_table_association" "public_route_tables_association" {
   count = "${length(var.public_subnets)}"
   subnet_id      = "${element(aws_subnet.public_subnets.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.public_route_tables.*.id, count.index)}"
+}
+
+################
+# Nat Gateway
+################
+
+resource "aws_eip" "eips" {
+  depends_on = ["aws_internet_gateway.gw"]
+
+  count="${length(var.private_subnets)}"
+  vpc = true
+}
+
+resource "aws_nat_gateway" "gateways" {
+  depends_on = ["aws_internet_gateway.gw"]
+
+  count="${length(var.private_subnets)}"
+  allocation_id = "${element(aws_eip.eips.*.id, count.index)}"
+  subnet_id = "${element(aws_subnet.public_subnets.*.id, count.index)}"
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-nat-gateway-${element(var.azs, count.index)}"))}"
+}
+
+
+################
+# Private subnets
+################
+
+resource "aws_subnet" "private_subnets" {
+  count = "${length(var.private_subnets)}"
+  vpc_id = "${aws_vpc.main.id}"
+  availability_zone = "${element(var.azs, count.index)}"
+  cidr_block = "${element(var.private_subnets, count.index)}"
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-private-subnet-${element(var.azs, count.index)}"))}"
+}
+
+resource "aws_route_table" "private_route_tables" {
+  count = "${length(var.private_subnets)}"
+  vpc_id = "${aws_vpc.main.id}"
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-private-routetable-${element(var.azs, count.index)}"))}"
+}
+
+resource "aws_route" "private_route" {
+  count = "${length(var.private_subnets)}"
+  route_table_id         = "${element(aws_route_table.private_route_tables.*.id, count.index)}"
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = "${element(aws_nat_gateway.gateways.*.id, count.index)}"
+}
+
+resource "aws_route_table_association" "puivate_route_tables_association" {
+  count = "${length(var.public_subnets)}"
+  subnet_id      = "${element(aws_subnet.private_subnets.*.id, count.index)}"
+  route_table_id = "${element(aws_route_table.private_route_tables.*.id, count.index)}"
+}
+
+
+################
+# DB subnets
+################
+
+resource "aws_subnet" "database_subnets" {
+  count = "${length(var.database_subnets)}"
+  vpc_id = "${aws_vpc.main.id}"
+  availability_zone = "${element(var.azs, count.index)}"
+  cidr_block = "${element(var.database_subnets, count.index)}"
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-db-subnet-${element(var.azs, count.index)}"))}"
+}
+
+resource "aws_route_table" "database" {
+  count = "${length(var.database_subnets)}"
+  vpc_id = "${aws_vpc.main.id}"
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-db-routetable-${element(var.azs, count.index)}"))}"
+}
+
+resource "aws_route_table_association" "database" {
+  count = "${length(var.database_subnets)}"
+
+  subnet_id      = "${element(aws_subnet.database_subnets.*.id, count.index)}"
+  route_table_id = "${element(aws_route_table.database.*.id, count.index)}"
+}
+
+resource "aws_db_subnet_group" "database" {
+  name        = "${lower(var.name)}-db-subnet-group"
+  description = "Database subnet group"
+  subnet_ids  = ["${aws_subnet.database_subnets.*.id}"]
+
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-db-subnet-group"))}"
 }

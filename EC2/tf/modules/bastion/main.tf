@@ -59,6 +59,7 @@ resource "aws_launch_configuration" "bastion" {
   lifecycle {
     create_before_destroy = true
   }
+
 }
 
 resource "aws_autoscaling_group" "bastion" {
@@ -78,6 +79,10 @@ resource "aws_autoscaling_group" "bastion" {
   ]
   timeouts {
     delete = "15m"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = [

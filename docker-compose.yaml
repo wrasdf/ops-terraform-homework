@@ -1,0 +1,19 @@
+---
+version: "3.4"
+
+x-base:
+  &base
+  image: hashicorp/terraform:0.11.10
+  working_dir: /app
+  volumes:
+    - "$HOME/.kube:/root/.kube"
+    - ".:/app"
+    - "$HOME/.aws:/root/.aws"
+
+services:
+
+  tf-ec2-stg:
+    <<: *base
+    working_dir: /app/EC2/tf/stg
+    environment:
+      AWS_DEFAULT_REGION: ap-southeast-1

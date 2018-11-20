@@ -6,8 +6,16 @@
 
 ### EC3 Deployment
 
+
+
 ### Reference
-- https://medium.com/hdeblog/terraform-sane-practices-project-structure-c4347c1bc0f1
-- https://github.com/terraform-aws-modules/terraform-aws-vpc
-- https://github.com/skyscrapers/terraform-network
-- https://github.com/antonbabenko/terraform-best-practices
+- Folder structure
+  - https://medium.com/hdeblog/terraform-sane-practices-project-structure-c4347c1bc0f1
+
+- Networks
+  - https://github.com/terraform-aws-modules/terraform-aws-vpc
+  - https://github.com/skyscrapers/terraform-network
+  - https://github.com/antonbabenko/terraform-best-practices
+
+- ECS
+  - https://github.com/terraform-community-modules/tf_aws_ecs

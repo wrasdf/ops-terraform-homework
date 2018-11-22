@@ -2,14 +2,20 @@ terraform {
   required_version = ">= 0.11.10" # introduction of Local Values configuration language feature
 }
 
-data "template_file" "user_data" {
+data "aws_vpc" "main" {
+  // todo -> use vpc stack output
+  id = "vpc-asfsdafd"
+}
+
+data "aws_subnet" "public_subnets" {
+  // todo -> use vpc stack output
+  ids = []
+}
+
+data "template_cloudinit_config" "config" {
   // TODO
 }
 
-data "aws_vpc" "main" {
-  // todo fix this
-  id = "adf"
-}
 
 data "aws_iam_policy_document" "assume_role_ec2" {
   statement {
@@ -36,10 +42,10 @@ data "aws_iam_policy_document" "logs" {
 }
 
 resource "aws_cloudwatch_log_group" "bastion" {
-  name = "${var.name}-log"
+  name = "${var.name}-bastion-log"
   retention_in_days = 7
 
-  tags = "${merge("${var.tags}", map("Name", "${var.name}-loggroup"))}"
+  tags = "${merge("${var.tags}", map("Name", "${var.name}-bastion-log"))}"
 }
 
 resource "aws_launch_configuration" "bastion" {
@@ -49,8 +55,8 @@ resource "aws_launch_configuration" "bastion" {
   instance_type = "${var.bastion_instance_type}"
   enable_monitoring = false
 
-  // TODO
-  # user_data     = "${data.template_file.user_data.rendered}"
+  # user_data     = "${data.template_cloudinit_config.config.rendered}"
+  user_data     = "${file(format("%s/user_data/bastion.sh", path.module))}"
   security_groups  = [
     "${aws_security_group.bastion.id}"
   ]
@@ -59,7 +65,6 @@ resource "aws_launch_configuration" "bastion" {
   lifecycle {
     create_before_destroy = true
   }
-
 }
 
 resource "aws_autoscaling_group" "bastion" {
@@ -72,7 +77,9 @@ resource "aws_autoscaling_group" "bastion" {
   health_check_grace_period = 300
   health_check_type         = "ELB"
   launch_configuration      = "${aws_launch_configuration.bastion.name}"
-  # vpc_zone_identifier       = // TODO
+
+  // TODO need update this
+  vpc_zone_identifier       = "${data.aws_subnet.public_subnets}"
 
   termination_policies      = [
     "OldestInstance"
@@ -88,11 +95,10 @@ resource "aws_autoscaling_group" "bastion" {
   tags = [
     "${merge("${var.tags}", map("Name", "${var.name}-asg", "propagate_at_launch", "true"))}"
   ]
-
 }
 
 resource "aws_iam_instance_profile" "bastion" {
-  name = "${var.name}-instance-profile"
+  name = "${var.name}-bastion-instance-profile"
   role = "${aws_iam_role.bastion.name}"
 }
 
@@ -132,5 +138,4 @@ resource "aws_security_group" "bastion" {
   }
 
   tags = "${merge("${var.tags}", map("Name", "${var.name}-sg"))}"
-
 }

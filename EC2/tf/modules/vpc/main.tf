@@ -13,6 +13,66 @@ resource "aws_vpc" "main" {
   tags = "${merge("${var.tags}", map("Name", "${var.name}-vpc"))}"
 }
 
+######
+# VPC Flow Log
+######
+
+resource "aws_cloudwatch_log_group" "vpc" {
+  name = "${var.name}-flow-logs"
+  retention_in_days = 14
+}
+
+resource "aws_flow_log" "vpc" {
+  iam_role_arn    = "${aws_iam_role.vpc.arn}"
+  log_destination = "${aws_cloudwatch_log_group.vpc.arn}"
+  traffic_type    = "ALL"
+  vpc_id          = "${aws_vpc.main.id}"
+}
+
+resource "aws_iam_role" "vpc" {
+  name = "${var.name}-flow-log-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "vpc-flow-logs.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "vpc" {
+  name = "allow_cw_logs"
+  role = "${aws_iam_role.vpc.arn}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
 ###################
 # DHCP
 ###################

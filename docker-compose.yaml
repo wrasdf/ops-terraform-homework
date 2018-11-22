@@ -16,4 +16,4 @@ services:
     <<: *base
     working_dir: /app/EC2/tf/stg
     environment:
-      AWS_DEFAULT_REGION: ap-southeast-1
+      AWS_DEFAULT_REGION: ap-southeast-2

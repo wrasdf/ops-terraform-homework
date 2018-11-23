@@ -3,6 +3,16 @@ variable "name" {
   default     = ""
 }
 
+variable "vpc_id" {
+  description = "Bastion vpc id"
+  default     = ""
+}
+
+variable "azs" {
+  description = "vpc zone identifier"
+  default     = []
+}
+
 variable "bastion_ami_id" {
   description = "Bastion AMI Id"
   default     = ""

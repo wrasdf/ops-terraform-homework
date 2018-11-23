@@ -22,3 +22,8 @@ output "nat_public_ips" {
   description = "List of public Elastic IPs created for AWS NAT Gateway"
   value       = ["${aws_eip.eips.*.public_ip}"]
 }
+
+output "azs" {
+  description = "List of vpc zone"
+  value       = "${var.azs}"
+}

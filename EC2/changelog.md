@@ -4,5 +4,4 @@ Version v0.0.1
 - APP
 
 ### TODO
-- How to pass value across tf
 - How to set AWS::AutoScaling::LaunchConfiguration metadata

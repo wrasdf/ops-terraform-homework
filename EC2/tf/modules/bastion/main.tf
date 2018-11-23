@@ -2,16 +2,6 @@ terraform {
   required_version = ">= 0.11.10" # introduction of Local Values configuration language feature
 }
 
-data "aws_vpc" "main" {
-  // todo -> use vpc stack output
-  id = "vpc-asfsdafd"
-}
-
-data "aws_subnet" "public_subnets" {
-  // todo -> use vpc stack output
-  ids = []
-}
-
 data "template_cloudinit_config" "config" {
   // TODO
 }
@@ -79,7 +69,7 @@ resource "aws_autoscaling_group" "bastion" {
   launch_configuration      = "${aws_launch_configuration.bastion.name}"
 
   // TODO need update this
-  vpc_zone_identifier       = "${data.aws_subnet.public_subnets}"
+  vpc_zone_identifier       = "${var.azs}"
 
   termination_policies      = [
     "OldestInstance"
@@ -117,7 +107,7 @@ resource "aws_iam_role_policy" "bastion" {
 resource "aws_security_group" "bastion" {
   name        = "${var.name}-sg"
   description = "Allow all inbound traffic"
-  vpc_id      = "${data.aws_vpc.main.id}"
+  vpc_id      = "${var.vpc_id}"
 
   ingress {
     from_port   = 22

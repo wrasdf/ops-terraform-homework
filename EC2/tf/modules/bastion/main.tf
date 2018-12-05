@@ -2,10 +2,26 @@ terraform {
   required_version = ">= 0.11.10" # introduction of Local Values configuration language feature
 }
 
-data "template_cloudinit_config" "config" {
-  // TODO
+data "template_file" "bastion" {
+  template      = "${file("${path.module}/user_data/bation.sh")}"
+
+  vars {
+    log_group_name = "${aws_cloudwatch_log_group.bastion.name}"
+    launch_configuration = "${aws_launch_configuration.bastion.id}"
+    autoscaling_group = "${aws_autoscaling_group.bastion.id}"
+  }
 }
 
+data "template_cloudinit_config" "config" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    filename     = "bation.sh"
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.bastion.rendered}"
+  }
+}
 
 data "aws_iam_policy_document" "assume_role_ec2" {
   statement {
@@ -45,8 +61,7 @@ resource "aws_launch_configuration" "bastion" {
   instance_type = "${var.bastion_instance_type}"
   enable_monitoring = false
 
-  # user_data     = "${data.template_cloudinit_config.config.rendered}"
-  user_data     = "${file(format("%s/user_data/bastion.sh", path.module))}"
+  user_data     = "${data.template_cloudinit_config.config.rendered}"
   security_groups  = [
     "${aws_security_group.bastion.id}"
   ]

@@ -2,7 +2,7 @@
 
 # Start cfn-init
 yum install -y aws-cfn-bootstrap awscli
-/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource EC2ServerLaunchConfiguration || error_exit 'Failed to run cfn-init'
+/opt/aws/bin/cfn-init -v --region ${var.region} --stack ${AWS::StackName} --resource EC2ServerLaunchConfiguration || error_exit 'Failed to run cfn-init'
 
 # Start app
 docker run -d -p 80:3000 ikerry/node-app:latest

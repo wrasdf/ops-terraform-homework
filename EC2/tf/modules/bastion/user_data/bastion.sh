@@ -1,39 +1,43 @@
-#!/bin/bash -xe
+#!/bin/bash -euo
 
-yum update -y aws-cfn-bootstrap awscli
+yum update -y aws-cfn-bootstrap awslogs awscli
 REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
+INSTANCEID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+# aws logs configs
+mkdir -p /etc/awslogs/
+
+AWSCLICONF="/etc/awslogs/awscli.conf"
+touch $AWSCLICONF && chmod 644 $AWSCLICONF
+cat >> $AWSCLICONF << EOF
+[default]
+region = $REGION
+[plugins]
+cwlogs = cwlogs
+EOF
+
+AWSLOGSCONF="/etc/awslogs/awslogs.conf"
+touch $AWSLOGSCONF && chmod 644 $AWSLOGSCONF
+cat >> $AWSLOGSCONF << EOF
+[general]
+state_file = /var/lib/awslogs/agent-state
+[/var/log/messages]
+datetime_format = %b %d %H:%M:%S
+file = /var/log/messages
+buffer_duration = 5000
+log_stream_name = ${INSTANCEID}/var/log/messages
+initial_position = start_of_file
+log_group_name = ${log_group_name}
+[/var/log/secure]
+datetime_format = %b %d %H:%M:%S
+file = /var/log/secure
+log_stream_name = ${INSTANCEID}/var/log/secure
+log_group_name = ${log_group_name}
+initial_position = start_of_file
+EOF
 
 # Start cfn-init
-/opt/aws/bin/cfn-init -v --region $REGION --stack ${AWS::StackName} --resource BastionLaunchConfiguration || error_exit 'Failed to run cfn-init'
+/opt/aws/bin/cfn-init -v --region $REGION --stack $CFN_STACK --resource ${launch_configuration} || error_exit 'Failed to run cfn-init'
 
 # signal success
-/opt/aws/bin/cfn-signal -e 0 --region $REGION --stack ${AWS::StackName} --resource BastionASG
-
-
-# REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
-# INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-# aws ec2 associate-address --region $REGION --instance-id $INSTANCE_ID --allocation-id ${eip_id}
-#
-# cat <<"INSTANCES_SCRIPT" > /etc/update-motd.d/60-update-list-of-running-instances
-# #!/bin/bash
-# aws configure set region ${region}
-# echo ""
-# echo ""
-# echo "Current instances grouped by AutoScaling Groups:"
-# # get all ASG
-# for asg in $(aws autoscaling describe-auto-scaling-groups --output text  --query 'AutoScalingGroups[?contains(AutoScalingGroupName, `${env}`) == `true`].AutoScalingGroupName'); do
-# echo ""
-# echo "Autoscaling group name: $asg"
-# # get all instances in ASG
-# for ip in $(aws ec2 describe-instances --filters Name=tag-key,Values='aws:autoscaling:groupName' Name=tag-value,Values=$asg --output text --query 'Reservations[*].Instances[*].[PrivateIpAddress]'); do
-#   echo $ip
-# done
-# echo ""
-# echo "========================================================================="
-# done
-# echo ""
-# echo "Log on to the boxes with: ssh <IP address>"
-# echo ""
-# INSTANCES_SCRIPT
-#
-# chmod +x /etc/update-motd.d/60-update-list-of-running-instances
+/opt/aws/bin/cfn-signal -e 0 --region $REGION --stack $CFN_STACK --resource ${autoscaling_group}

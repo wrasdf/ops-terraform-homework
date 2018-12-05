@@ -14,12 +14,12 @@ data "aws_availability_zones" "available" {
 
 data "aws_subnet_ids" "public_subnets" {
   // todo -> need to pass in
-  vpc_id = "${data.aws_vpc.main.id}"
+  vpc_id = "${var.vpc_id}"
 }
 
 data "aws_subnet_ids" "private_subnets" {
   // todo -> use vpc stack output
-  vpc_id = "${data.aws_vpc.main.id}"
+  vpc_id = "${var.vpc_id}"
 }
 
 data "aws_security_group" "bastion" {
@@ -37,7 +37,7 @@ resource "aws_cloudwatch_log_group" "app" {
 resource "aws_security_group" "elb" {
   name        = "${var.name}-ec2-elb-sg"
   description = "Allow http to client host"
-  vpc_id      = "${data.aws_vpc.main.id}"
+  vpc_id      = "${var.vpc_id}"
 
   ingress {
     from_port   = 80

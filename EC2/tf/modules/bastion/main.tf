@@ -15,7 +15,6 @@ data "template_cloudinit_config" "config" {
   base64_encode = true
 
   part {
-    filename     = "bation.sh"
     content_type = "text/x-shellscript"
     content      = "${data.template_file.bastion.rendered}"
   }
@@ -59,8 +58,8 @@ resource "aws_launch_configuration" "bastion" {
   instance_type = "${var.bastion_instance_type}"
   enable_monitoring = false
 
-  user_data     = "${data.template_cloudinit_config.config.rendered}"
-  security_groups  = [
+  user_data         = "${data.template_cloudinit_config.config.rendered}"
+  security_groups   = [
     "${aws_security_group.bastion.id}"
   ]
   iam_instance_profile = "${aws_iam_instance_profile.bastion.name}"
@@ -77,12 +76,12 @@ resource "aws_autoscaling_group" "bastion" {
   min_size           = 0
   max_size           = 1
 
+  force_delete              = true
   health_check_grace_period = 300
   health_check_type         = "ELB"
   launch_configuration      = "${aws_launch_configuration.bastion.name}"
 
-  // TODO need update this
-  vpc_zone_identifier       = "${var.azs}"
+  vpc_zone_identifier       = "${var.vpc_zone_identifier}"
 
   termination_policies      = [
     "OldestInstance"
@@ -95,9 +94,20 @@ resource "aws_autoscaling_group" "bastion" {
     create_before_destroy = true
   }
 
+  # TODO
   tags = [
-    "${merge("${var.tags}", map("Name", "${var.name}-asg", "propagate_at_launch", "true"))}"
+    {
+      key                 = "Environment"
+      value               = "${var.env}"
+      propagate_at_launch = true
+    },
+    {
+      key                 = "Name"
+      value               = "${var.name}-asg"
+      propagate_at_launch = true
+    }
   ]
+
 }
 
 resource "aws_iam_instance_profile" "bastion" {

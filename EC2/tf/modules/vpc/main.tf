@@ -16,7 +16,6 @@ resource "aws_vpc" "main" {
 ######
 # VPC Flow Log
 ######
-
 resource "aws_cloudwatch_log_group" "vpc" {
   name = "${var.name}-flow-logs"
   retention_in_days = 14
@@ -50,8 +49,8 @@ EOF
 }
 
 resource "aws_iam_role_policy" "vpc" {
-  name = "allow_cw_logs"
-  role = "${aws_iam_role.vpc.arn}"
+  name = "allowvpclogs"
+  role = "${aws_iam_role.vpc.id}"
 
   policy = <<EOF
 {

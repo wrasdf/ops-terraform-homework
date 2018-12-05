@@ -3,6 +3,10 @@ variable "name" {
   default     = ""
 }
 
+variable "env" {
+  description = "current stack environment"
+}
+
 variable "region" {
   description = "Current stack region"
 }
@@ -12,13 +16,13 @@ variable "amis" {
   description = "AMI Ids"
 }
 
-
 variable "vpc_id" {
   description = "Bastion vpc id"
   default     = ""
 }
 
-variable "azs" {
+variable "vpc_zone_identifier" {
+  type        = "list"
   description = "vpc zone identifier"
   default     = []
 }

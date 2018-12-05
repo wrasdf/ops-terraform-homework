@@ -3,6 +3,16 @@ variable "name" {
   default     = ""
 }
 
+variable "region" {
+  description = "Current stack region"
+}
+
+variable "amis" {
+  type = "map"
+  description = "AMI Ids"
+}
+
+
 variable "vpc_id" {
   description = "Bastion vpc id"
   default     = ""
@@ -13,14 +23,8 @@ variable "azs" {
   default     = []
 }
 
-variable "bastion_ami_id" {
-  description = "Bastion AMI Id"
-  default     = ""
-}
-
 variable "bastion_ssh_key" {
   description = "SSHkey name for the bastion box"
-  default     = "EC2-Key"
 }
 
 variable "bastion_instance_type" {

@@ -3,12 +3,10 @@ terraform {
 }
 
 data "template_file" "bastion" {
-  template      = "${file("${path.module}/user_data/bation.sh")}"
+  template      = "${file("${path.module}/user_data/bastion.sh")}"
 
   vars {
     log_group_name = "${aws_cloudwatch_log_group.bastion.name}"
-    launch_configuration = "${aws_launch_configuration.bastion.id}"
-    autoscaling_group = "${aws_autoscaling_group.bastion.id}"
   }
 }
 
@@ -57,7 +55,7 @@ resource "aws_cloudwatch_log_group" "bastion" {
 resource "aws_launch_configuration" "bastion" {
   name_prefix   = "${var.name}-"
   key_name      = "${var.bastion_ssh_key}"
-  image_id      = "${var.bastion_ami_id}"
+  image_id      = "${lookup(var.amis, var.region)}"
   instance_type = "${var.bastion_instance_type}"
   enable_monitoring = false
 

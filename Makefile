@@ -1,9 +1,11 @@
 DCR = docker-compose run --rm
 DCB = docker-compose build
 
-tf-%:
+plan-%:
 	$(DCB) tf-$(*)
 	$(DCR) tf-$(*) init
-	$(DCR) tf-$(*) plan -refresh=true -target=main.tf
-	$(DCR) tf-$(*) plan -refresh=true -target=vpc.tf
-	$(DCR) tf-$(*) plan -refresh=true -target=bastion.tf
+	$(DCR) tf-$(*) plan
+
+apply-%:
+	$(DCB) tf-$(*)
+	$(DCR) tf-$(*) apply

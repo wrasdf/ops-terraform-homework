@@ -36,8 +36,5 @@ log_group_name = ${log_group_name}
 initial_position = start_of_file
 EOF
 
-# Start cfn-init
-/opt/aws/bin/cfn-init -v --region $REGION --stack $CFN_STACK --resource ${launch_configuration} || error_exit 'Failed to run cfn-init'
-
 # signal success
-/opt/aws/bin/cfn-signal -e 0 --region $REGION --stack $CFN_STACK --resource ${autoscaling_group}
+# /opt/aws/bin/cfn-signal -e 0 --region $REGION --stack $CFN_STACK --resource ${autoscaling_group}
